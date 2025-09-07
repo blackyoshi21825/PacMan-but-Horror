@@ -63,8 +63,16 @@ class Big3D:
                 int(shadow_factor * 127) + int(light_intensity * 83)) % 9973
         
         all_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%&*+-=.,;:!?~`'|\"^<>_"
+        char = all_chars[seed % len(all_chars)]
         
-        return all_chars[seed % len(all_chars)]
+        # Brightness gradient based on distance
+        if brightness > 0.8: intensity = "1;37"  # Bright white
+        elif brightness > 0.6: intensity = "37"   # Normal white
+        elif brightness > 0.4: intensity = "90"   # Dark gray
+        elif brightness > 0.2: intensity = "2;37" # Dim white
+        else: intensity = "2;90"                  # Very dim gray
+        
+        return f"\033[{intensity}m{char}\033[0m"
     
     def render(self):
 
