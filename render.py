@@ -95,8 +95,20 @@ class Big3D:
             column = []
             for row in range(self.height):
                 if row < wall_start:
-                    if row < self.height * 0.2: column.append(' ')
-                    else: column.append('.')
+                    if row < self.height * 0.2: 
+                        # Ceiling
+                        ceiling_dist = (self.height * 0.2 - row) / (self.height * 0.2) * 8
+                        ceiling_char = '#' if (col + row) % 3 == 0 else '-'
+                        brightness = 0.3 / (ceiling_dist + 1)
+                        intensity = "2;34" if brightness < 0.1 else "34"
+                        column.append(f"\033[{intensity}m{ceiling_char}\033[0m")
+                    else:
+                        # Sky with same pattern as ceiling
+                        sky_char = '#' if (col + row) % 3 == 0 else '-'
+                        sky_dist = (row - self.height * 0.2) / (self.height * 0.6) * 4
+                        brightness = 0.2 / (sky_dist + 1)
+                        intensity = "2;34" if brightness < 0.1 else "34"
+                        column.append(f"\033[{intensity}m{sky_char}\033[0m")
                 elif row > wall_end:
                     if row > self.height * 0.8: column.append('_')
                     else: column.append(',')
@@ -118,13 +130,13 @@ class Big3D:
                 key = msvcrt.getch().decode().lower()
                 if key == 'x': break
                 elif key == 'w':
-                    nx = self.x + math.cos(self.angle) * 0.4
-                    ny = self.y + math.sin(self.angle) * 0.4
+                    nx = self.x + math.cos(self.angle) * 0.2
+                    ny = self.y + math.sin(self.angle) * 0.2
                     if self.map[int(ny)][int(nx)] == '.': 
                         self.x, self.y = nx, ny
                 elif key == 's':
-                    nx = self.x - math.cos(self.angle) * 0.4
-                    ny = self.y - math.sin(self.angle) * 0.4
+                    nx = self.x - math.cos(self.angle) * 0.2
+                    ny = self.y - math.sin(self.angle) * 0.2
                     if self.map[int(ny)][int(nx)] == '.': 
                         self.x, self.y = nx, ny
                 elif key == 'a': self.angle -= 0.25
