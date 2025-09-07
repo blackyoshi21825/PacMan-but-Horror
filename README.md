@@ -9,6 +9,7 @@ A terminal-based 3D renderer that creates a first-person view using ASCII charac
 - Jump mechanics with gravity
 - Dynamic lighting and shadows
 - Textured walls using ASCII patterns
+- Colored wall types: A (red), B (green), C (yellow), D (blue), E (magenta)
 
 ## Controls
 
