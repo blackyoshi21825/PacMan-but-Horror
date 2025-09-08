@@ -70,10 +70,18 @@ class Big3D:
         return 12, '#', 0, 0
     
     def get_wall_char(self, col, row, dist, wall_type, grid_x, grid_y, wall_start, wall_end):
-        # Special handling for NPCs - single character
+        # Special handling for NPCs - clean human sprites
         if wall_type == 'N':
-            # Use a single character that looks human-like
-            char = '@' if (self.frame_count//20) % 2 == 0 else '&'
+            wall_height = wall_end - wall_start
+            sprite_pos = (row - wall_start) / max(wall_height, 1)
+            
+            if sprite_pos < 0.25:  # Head
+                char = 'O' if (self.frame_count//10) % 2 == 0 else 'o'
+            elif sprite_pos < 0.75:  # Body
+                char = '|' if (self.frame_count//15) % 2 == 0 else '/'
+            else:  # Legs
+                char = '^' if (self.frame_count//12) % 2 == 0 else 'A'
+            
             return f"\033[38;5;208m{char}\033[0m"
         
         # Regular wall rendering
