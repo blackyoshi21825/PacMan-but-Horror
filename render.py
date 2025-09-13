@@ -5,31 +5,26 @@ import os
 
 class Big3D:
     def __init__(self):
-        self.x, self.y, self.z, self.angle, self.pitch = 8, 8, 0, 0, 0
+        self.x, self.y, self.z, self.angle, self.pitch = 1.5, 1.5, 0, 0, 0
         self.z_velocity = 0
         self.width, self.height = self.get_screen_size()
         # NPCs deleted as requested
         self.npcs = []
         self.map = [
-            "################",
-            "#..............#",
-            "#..AAA.....BBB.#",
-            "#..AAA.....BBB.#",
-            "#..............#",
-            "#....CCCC......#",
-            "#....CCCC......#",
-            "#..............#",
-            "#..DDDDDDDDDD..#",
-            "#..............#",
-            "#.....EEE......#",
-            "#.....EEE......#",
-            "#..............#",
-            "#..............#",
-            "#..............#",
-            "################"
+            "##########",
+            "#..AAA...#",
+            "#..AAA...#",
+            "#........#",
+            "#.CCCC.BB#",
+            "#.CCCC.BB#",
+            "#........#",
+            "#..EEE...#",
+            "#..EEE...#",
+            "##########"
         ]
         self.screen = None
         self.frame_count = 0
+        self.textures = self.generate_textures()
 
     def get_screen_size(self):
         try:
@@ -37,6 +32,42 @@ class Big3D:
             return size.columns, size.lines - 1
         except:
             return 80, 24
+
+    def generate_textures(self):
+        import random
+        textures = {}
+        char_grad = " .-,=+*#%@"
+        
+        for wall_type in ['A', 'B', 'C', 'D', 'E', '#']:
+            texture = []
+            for y in range(32):
+                row = []
+                for x in range(32):
+                    if wall_type == 'A':  # Red brick
+                        char_val = 12 - 8 * ((y % 6 == 0) or ((x + 4 * (y // 6)) % 16 == 0)) + random.randint(0, 1)
+                        color = 31 if ((y % 6 == 0) or ((x + 4 * (y // 6)) % 16 == 0)) else 91
+                    elif wall_type == 'B':  # Green large brick
+                        char_val = 8 - 4 * ((y % 31 == 0) or ((x + 4 * (y // 31)) % 16 == 0)) + random.randint(0, 1)
+                        color = 32 if ((y % 31 == 0) or ((x + 4 * (y // 31)) % 16 == 0)) else 92
+                    elif wall_type == 'C':  # Yellow stone
+                        char_val = 8 - 4 * ((y % 8 == 0) or (x % 8 == 0)) + random.randint(0, 1)
+                        color = 33 if ((y % 8 == 0) or (x % 8 == 0)) else 93
+                    elif wall_type == 'D':  # Blue pattern
+                        char_val = 10 - 6 * ((y % 4 == 0) or (x % 4 == 0)) + random.randint(0, 1)
+                        color = 34 if ((y % 4 == 0) or (x % 4 == 0)) else 94
+                    elif wall_type == 'E':  # Magenta cross pattern
+                        char_val = 9 - 5 * ((y % 16 == 8) or (x % 16 == 8)) + random.randint(0, 1)
+                        color = 35 if ((y % 16 == 8) or (x % 16 == 8)) else 95
+                    else:  # Default wall
+                        char_val = 7 - 3 * ((y % 2 == 0) and (x % 2 == 0)) + random.randint(0, 1)
+                        color = 37
+                    
+                    char_val = max(0, min(9, char_val))
+                    char = char_grad[char_val]
+                    row.append((char, color))
+                texture.append(row)
+            textures[wall_type] = texture
+        return textures
 
     def update_npcs(self):
         # No NPCs to update
@@ -46,18 +77,26 @@ class Big3D:
         x, y = self.x, self.y
         dx, dy = math.sin(angle) * 0.01, math.cos(angle) * 0.01
         dist = 0
+        hit_vertical = False
         while dist < 12:
+            prev_x, prev_y = x, y
             x += dx
             y += dy
             dist += 0.01
-            # No NPC collision
             grid_x, grid_y = int(x), int(y)
             if grid_y < 0 or grid_y >= len(self.map) or grid_x < 0 or grid_x >= len(self.map[0]):
-                return dist, '#', grid_x, grid_y
+                return dist, '#', grid_x, grid_y, 0, hit_vertical
             cell = self.map[grid_y][grid_x]
             if cell != '.' and cell != ' ':
-                return dist, cell, grid_x, grid_y
-        return 12, '#', 0, 0
+                # Calculate texture coordinate
+                if abs(x - prev_x) > abs(y - prev_y):
+                    tex_coord = int((y % 1) * 32)
+                    hit_vertical = True
+                else:
+                    tex_coord = int((x % 1) * 32)
+                    hit_vertical = False
+                return dist, cell, grid_x, grid_y, tex_coord, hit_vertical
+        return 12, '#', 0, 0, 0, False
 
     def render(self):
         self.frame_count += 1
@@ -68,7 +107,7 @@ class Big3D:
         # Render walls and floor/ceiling
         for col in range(self.width):
             ray_angle = self.angle - fov / 2.0 + (col / self.width) * fov
-            dist, wall_type, grid_x, grid_y = self.cast_ray(ray_angle)
+            dist, wall_type, grid_x, grid_y, tex_coord, hit_vertical = self.cast_ray(ray_angle)
             dist = max(dist, 0.1)
             height = min(int(self.height * 0.8 / dist), self.height)
             horizon = self.height // 2 + int(self.z * 2 + self.pitch * self.height * 0.3)
@@ -95,7 +134,7 @@ class Big3D:
                     else:
                         screen[col][row] = ','
                 else:
-                    screen[col][row] = self.get_wall_char(col, row, dist, wall_type, grid_x, grid_y, wall_start, wall_end)
+                    screen[col][row] = self.get_textured_wall_char(col, row, dist, wall_type, tex_coord, hit_vertical, wall_start, wall_end, height)
 
         # No NPC billboard rendering
 
@@ -105,21 +144,35 @@ class Big3D:
         frame += f"Pos: ({self.x:.1f},{self.y:.1f},{self.z:.1f}) Angle: {math.degrees(self.angle):.0f}° Pitch: {math.degrees(self.pitch):.0f}° | WASD=move SPACE=jump EQ=look↕ X=quit"
         print(frame, end='', flush=True)
 
-    def get_wall_char(self, col, row, dist, wall_type, grid_x, grid_y, wall_start, wall_end):
-        # Only used for vertical slice raycasting (walls and NPC fallback)
-        brightness = 0.8 / (dist + 0.5)
-        shadow_factor = abs(math.sin((grid_x - self.x) * 0.5) * math.cos((grid_y - self.y) * 0.3))
-        light_angle = math.atan2(grid_y - self.y, grid_x - self.x) - self.angle
-        light_intensity = (math.cos(light_angle) + 1) * 0.5
-        seed = (col * 17 + row * 23 + grid_x * 31 + grid_y * 37 + int(shadow_factor * 127) + int(light_intensity * 83)) % 9973
-        all_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%&*+-=.,;:!?~`'|\"^<>_"
-        char = all_chars[seed % len(all_chars)]
-        colors = {'A': '31', 'B': '32', 'C': '33', 'D': '34', 'E': '35', '#': '37'}
-        base_color = colors.get(wall_type, '37')
-        if brightness > 0.8: intensity = f"1;{base_color}"
-        elif brightness > 0.6: intensity = base_color
-        elif brightness > 0.4: intensity = f"2;{base_color}"
-        else: intensity = f"2;90"
+    def get_textured_wall_char(self, col, row, dist, wall_type, tex_coord, hit_vertical, wall_start, wall_end, height):
+        # Calculate texture Y coordinate
+        wall_pos = (row - wall_start) / max(1, wall_end - wall_start)
+        tex_y = int(wall_pos * 31) % 32
+        tex_x = tex_coord % 32
+        
+        # Get texture character and color
+        if wall_type in self.textures:
+            char, color = self.textures[wall_type][tex_y][tex_x]
+        else:
+            char, color = '#', 37
+        
+        # Apply lighting (from C++ implementation)
+        brightness = 5.0 / self.height * height  # Proportional to wall height
+        brightness = brightness + 0.2  # Add base brightness for contrast
+        if not hit_vertical:  # North/south walls are darker (Wolfenstein style)
+            brightness *= 0.5
+        else:
+            brightness *= 1.0  # East/west walls are brighter
+        
+        # Distance-based lighting falloff
+        brightness *= 0.8 / (dist + 0.5)
+        
+        # Adjust brightness
+        if brightness > 0.8: intensity = f"1;{color}"
+        elif brightness > 0.6: intensity = str(color)
+        elif brightness > 0.4: intensity = f"2;{color}"
+        else: intensity = "2;90"
+        
         return f"\033[{intensity}m{char}\033[0m"
 
     def run(self):
