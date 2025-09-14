@@ -1,23 +1,28 @@
-# 3D ASCII Game
+# 3D ASCII Horror Game
 
-A terminal-based 3D renderer that creates a first-person view using ASCII characters and raycasting.
+A terminal-based 3D Pac-Man-style horror game using ASCII raycasting with ghosts, health pickups, and flashlight mechanics.
 
 ## Features
 
-- Real-time 3D rendering in terminal
-- First-person movement and look controls
+- Real-time 3D rendering in terminal using raycasting
+- First-person movement with mouse look support
 - Jump mechanics with gravity
-- Dynamic lighting and shadows
-- Textured walls using ASCII patterns
-- Colored wall types: A (red), B (green), C (yellow), D (blue), E (magenta)
-- Orange NPCs that walk around the map autonomously
+- Flashlight system with battery drain and flickering
+- Textured brick walls with color variations
+- Four Pac-Man-style ghosts with AI pathfinding
+- Health system with damage and health pickups
+- Minimap display
+- Game over and victory screens
+- Timed escape gate objective
 
 ## Controls
 
 - **W/S** - Move forward/backward
 - **A/D** - Turn left/right
+- **Mouse** - Look around
 - **SPACE** - Jump
 - **Q/E** - Look up/down
+- **F** - Toggle flashlight
 - **X** - Quit
 
 ## Requirements
@@ -32,6 +37,19 @@ A terminal-based 3D renderer that creates a first-person view using ASCII charac
 python render.py
 ```
 
-## How it Works
+## Gameplay
 
-Uses raycasting to render a 3D perspective from a 2D map. Each column of the screen casts a ray to determine wall distance and height, creating the illusion of 3D depth with ASCII characters.
+Survive in a dark maze while being hunted by four colored ghosts. After 2 minutes, a golden gate opens in the bottom-right corner of the map. Reach the gate to win! Use your flashlight to see, but watch the battery! Collect green health pickups to restore HP. Ghosts use pathfinding AI to hunt you down.
+
+## Objective
+
+Survive for 2 minutes until the escape gate opens, then reach it to win the game!
+
+## Technical Details
+
+Uses raycasting to render a 3D perspective from a 2D map. Features include:
+- Textured walls with brick patterns
+- Sprite rendering for ghosts and pickups
+- Depth buffering for proper occlusion
+- Dynamic lighting with flashlight cone
+- AI pathfinding for ghost movement
